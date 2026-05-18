@@ -1,0 +1,24 @@
+# Claude Code
+.claude/
+
+# Images (Roboflow'da tutulacak)
+*.jpg
+*.jpeg
+*.JPG
+*.png
+*.PNG
+
+# Cache
+data/dataset/*/labels.cache
+runs/
+__pycache__/
+*.pyc
+
+# Base model (büyük, gerekirse ayrı indir)
+yolov8n.pt
+
+# Output
+output/
+
+# Training logs
+training_resume.log
