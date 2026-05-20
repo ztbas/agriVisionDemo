@@ -13,6 +13,8 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024 # 5 GB video upload limit
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
+active_video_streams = {}
+
 model = YOLO('models/best_v5.pt')
 
 UPLOAD_FOLDER = 'static/uploads'
@@ -79,30 +81,43 @@ def detect_video():
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         tmp.close() # Windows'ta dosya kilitleme hatasını (WinError 32) önlemek için kapatıyoruz
         file.save(tmp.name)
+        
+        # Sadece dosya yolunu dön, analiz Socket.IO üzerinden canlı yapılacak
+        return jsonify({'success': True, 'video_id': tmp.name, 'type': 'video_stream'})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Sistemsel hata: {str(e)}'}), 500
 
-        cap = cv2.VideoCapture(tmp.name)
+@socketio.on('start_video_stream')
+def handle_start_video_stream(data):
+    sid = request.sid
+    active_video_streams[sid] = True
+    
+    video_path = data.get('video_id')
+    if not video_path or not os.path.exists(video_path):
+        emit('video_stream_error', {'error': 'Video dosyası bulunamadı.'})
+        return
+
+    try:
+        cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            return jsonify({'error': 'Video okunamadı. Desteklenmeyen format veya bozuk dosya olabilir.'}), 400
+            emit('video_stream_error', {'error': 'Video okunamadı.'})
+            return
             
         fps = cap.get(cv2.CAP_PROP_FPS)
-        if fps <= 0:
-            fps = 25.0
+        if fps <= 0: fps = 25.0
         
-        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
- 
-        out_path = os.path.join(UPLOAD_FOLDER, 'result_video.webm')
-        # Tarayıcıda en kusursuz ve codec bağımsız çalışan format WebM (VP8) formatıdır.
-        fourcc = cv2.VideoWriter_fourcc(*'VP80')
-        out = cv2.VideoWriter(out_path, fourcc, fps, (w, h))
+        # Gerçek zamanlı hissi için bekleme süresi (biraz daha hızlı olabilir)
+        sleep_time = 1.0 / fps
+        if sleep_time > 0.05: sleep_time = 0.05 
  
         all_detections = {}
         frame_count = 0
-        sample_frame_b64 = None
         seen_tracks = set()
         track_history = {}
  
-        while cap.isOpened():
+        while cap.isOpened() and active_video_streams.get(sid, False):
             ret, frame = cap.read()
             if not ret:
                 break
@@ -112,13 +127,18 @@ def detect_video():
             results = filter_huge_boxes(results)
             annotated = results[0].plot()
             
+            frame_detections = []
+            for box in results[0].boxes:
+                cls_name = model.names[int(box.cls[0])]
+                conf = float(box.conf[0])
+                frame_detections.append({'class': cls_name, 'confidence': round(conf * 100, 1)})
+            
             if results[0].boxes.id is not None:
                 for box in results[0].boxes:
                     cls_name = model.names[int(box.cls[0])]
                     conf = float(box.conf[0])
                     track_id = int(box.id[0])
                     
-                    # Otun gerçekten var olduğundan emin olmak için 3 kare (frame) boyunca stabil kalmasını bekle
                     track_history[track_id] = track_history.get(track_id, 0) + 1
                     
                     if track_history[track_id] == 3:
@@ -129,7 +149,6 @@ def detect_video():
                                 all_detections[cls_name] = []
                             all_detections[cls_name].append(round(conf * 100, 1))
             else:
-                # Takip ID'si henüz atanmadıysa (ilk kareler), o karedeki maksimum eşzamanlı ot sayısını baz alarak tekilleştirme yap
                 current_frame_counts = {}
                 for box in results[0].boxes:
                     cls_name = model.names[int(box.cls[0])]
@@ -141,31 +160,48 @@ def detect_video():
                     while len(all_detections[cls_name]) < count:
                         all_detections[cls_name].append(80.0)
             
-            if sample_frame_b64 is None and len(results[0].boxes) > 0:
-                _, buf = cv2.imencode('.jpg', annotated)
-                sample_frame_b64 = base64.b64encode(buf).decode('utf-8')
-            out.write(annotated)
+            # Kareyi istemciye gönder
+            _, buffer = cv2.imencode('.jpg', annotated)
+            b64_img = "data:image/jpeg;base64," + base64.b64encode(buffer).decode('utf-8')
+            
             frame_count += 1
+            emit('video_stream_frame', {
+                'image': b64_img,
+                'detections': frame_detections,
+                'frame_number': frame_count
+            })
+            
+            socketio.sleep(sleep_time)
  
         cap.release()
-        out.release()
-        os.unlink(tmp.name)
-
-        if sample_frame_b64 is None:
-            cap2 = cv2.VideoCapture(out_path)
-            ret, frame = cap2.read()
-            if ret:
-                _, buf = cv2.imencode('.jpg', frame)
-                sample_frame_b64 = base64.b64encode(buf).decode('utf-8')
-            cap2.release()
+        try:
+            os.unlink(video_path)
+        except:
+            pass
 
         summary = [{'class': k, 'count': len(v), 'avg_confidence': round(sum(v)/len(v), 1)} for k, v in all_detections.items()]
+        
+        emit('video_stream_done', {
+            'summary': summary, 
+            'total': sum(d['count'] for d in summary), 
+            'frames': frame_count
+        })
 
-        return jsonify({'detections': summary, 'total': sum(d['count'] for d in summary), 'frames': frame_count, 'sample_frame': sample_frame_b64, 'type': 'video', 'video_url': '/static/uploads/result_video.webm'})
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': f'Sistemsel hata: {str(e)}'}), 500
+        emit('video_stream_error', {'error': f'Video akış hatası: {str(e)}'})
+
+@socketio.on('stop_video_stream')
+def handle_stop_video_stream():
+    sid = request.sid
+    active_video_streams[sid] = False
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    sid = request.sid
+    if sid in active_video_streams:
+        active_video_streams[sid] = False
 
 @socketio.on('process_frame')
 def handle_process_frame(data):

@@ -22,3 +22,6 @@ output/
 
 # Training logs
 training_resume.log
+
+# Uploads
+static/uploads/

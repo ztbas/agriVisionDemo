@@ -3,251 +3,377 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriVision</title>
-    <!-- PWA kaldırıldı, saf web uygulaması olarak mobil/PC uyumlu çalışır -->
+    <title>AgriVision AI</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Isı Haritası (Heatmap) için Leaflet.heat Eklentisi -->
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.6);
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0f0a; color: #e8f5e8; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-        header { padding: 20px 40px; border-bottom: 1px solid #1e3a1e; display: flex; align-items: center; }
-        .logo { font-family: 'Space Mono', monospace; font-size: 20px; color: #4caf50; }
-        .logo span { color: #81c784; }
-        .subtitle { font-size: 12px; color: #4a7a4a; font-family: 'Space Mono', monospace; margin-left: auto; }
-        main { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
-        h1 { font-size: 36px; font-weight: 300; margin-bottom: 6px; }
-        h1 strong { color: #4caf50; font-weight: 600; }
-        .desc { color: #4a7a4a; margin-bottom: 32px; font-size: 14px; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
-        .tab { padding: 10px 24px; border-radius: 8px; border: 1px solid #1e3a1e; background: transparent; color: #4a7a4a; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-        .tab.active { background: #4caf50; color: #0a0f0a; border-color: #4caf50; font-weight: 600; }
-        .upload-area { border: 2px dashed #1e3a1e; border-radius: 16px; padding: 48px; text-align: center; cursor: pointer; transition: all 0.3s; background: #0d150d; }
-        .upload-area:hover { border-color: #4caf50; background: #0f1a0f; }
-        .upload-icon { font-size: 40px; margin-bottom: 12px; }
-        .upload-area h2 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
-        .upload-area p { color: #4a7a4a; font-size: 13px; }
+        body { 
+            background: var(--bg-color); 
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif; 
+            min-height: 100vh; 
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        header { 
+            padding: 20px 40px; 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .logo { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px;}
+        .logo span { color: var(--primary); }
+        .subtitle { font-size: 12px; color: var(--text-muted); font-family: 'Inter', sans-serif; margin-left: auto; letter-spacing: 1px;}
+        
+        main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+        
+        h1 { font-family: 'Outfit', sans-serif; font-size: 42px; font-weight: 300; margin-bottom: 12px; line-height: 1.1; letter-spacing: -1px;}
+        h1 strong { color: var(--primary); font-weight: 600; }
+        .desc { color: var(--text-muted); margin-bottom: 40px; font-size: 16px; font-weight: 300;}
+        
+        .tabs { display: flex; gap: 12px; margin-bottom: 30px; }
+        .tab { 
+            padding: 12px 28px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color); 
+            background: rgba(255,255,255,0.03); 
+            color: var(--text-muted); 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 15px; 
+            font-weight: 500;
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+        .tab:hover { background: rgba(255,255,255,0.08); color: var(--text-main);}
+        .tab.active { 
+            background: var(--primary); 
+            color: #fff; 
+            border-color: var(--primary); 
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .upload-area { 
+            border: 2px dashed rgba(16, 185, 129, 0.3); 
+            border-radius: 20px; 
+            padding: 60px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            background: rgba(16, 185, 129, 0.02); 
+        }
+        .upload-area:hover { 
+            border-color: var(--primary); 
+            background: rgba(16, 185, 129, 0.05); 
+            transform: translateY(-2px);
+        }
+        .upload-icon { font-size: 48px; margin-bottom: 16px; filter: drop-shadow(0 0 10px rgba(16,185,129,0.3));}
+        .upload-area h2 { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 500; margin-bottom: 8px; color: var(--text-main);}
+        .upload-area p { color: var(--text-muted); font-size: 14px; }
         input[type=file] { display: none; }
-        .btn { display: inline-block; margin-top: 16px; padding: 10px 24px; background: #4caf50; color: #0a0f0a; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn:hover { background: #66bb6a; }
-        .btn:disabled { background: #1e3a1e; color: #4a7a4a; cursor: not-allowed; }
-        .btn-outline { background: transparent; border: 1px solid #4caf50; color: #4caf50; margin-left: 8px; }
-        .btn-outline:hover { background: #0f1a0f; }
-        #preview, #videoPreview { margin-top: 16px; max-width: 100%; max-height: 250px; border-radius: 10px; display: none; }
-        .file-name { margin-top: 10px; font-size: 12px; color: #4caf50; font-family: 'Space Mono', monospace; display: none; }
-        .loading { display: none; text-align: center; padding: 32px; color: #4a7a4a; font-family: 'Space Mono', monospace; font-size: 13px; }
-        .spinner { display: inline-block; width: 28px; height: 28px; border: 2px solid #1e3a1e; border-top-color: #4caf50; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+        
+        .btn { 
+            display: inline-block; 
+            margin-top: 20px; 
+            padding: 12px 28px; 
+            background: var(--primary); 
+            color: #fff; 
+            border: none; 
+            border-radius: 10px; 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 15px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);}
+        .btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none;}
+        .btn-outline { 
+            background: transparent; 
+            border: 1px solid var(--primary); 
+            color: var(--primary); 
+            margin-left: 12px; 
+            box-shadow: none;
+        }
+        .btn-outline:hover { background: rgba(16, 185, 129, 0.1); }
+        
+        #preview, #videoPreview { margin-top: 20px; max-width: 100%; max-height: 300px; border-radius: 12px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3);}
+        .file-name { margin-top: 15px; font-size: 13px; color: var(--primary); font-family: 'Inter', sans-serif; display: none; font-weight: 500;}
+        
+        .loading { display: none; text-align: center; padding: 40px; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 15px; }
+        .spinner { 
+            display: inline-block; 
+            width: 36px; 
+            height: 36px; 
+            border: 3px solid rgba(255,255,255,0.1); 
+            border-top-color: var(--primary); 
+            border-radius: 50%; 
+            animation: spin 0.8s linear infinite; 
+            margin-bottom: 16px; 
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
         .results { margin-top: 40px; display: none; }
-        .results h2 { font-size: 18px; font-weight: 500; margin-bottom: 20px; color: #4caf50; font-family: 'Space Mono', monospace; }
-        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 650px) { .result-grid { grid-template-columns: 1fr; } }
-        .result-image-box img { width: 100%; border-radius: 12px; border: 1px solid #1e3a1e; }
-        .detections-box { background: #0d150d; border: 1px solid #1e3a1e; border-radius: 12px; padding: 20px; }
-        .stat { font-family: 'Space Mono', monospace; font-size: 12px; color: #4a7a4a; margin-bottom: 16px; }
-        .stat strong { font-size: 36px; color: #4caf50; display: block; line-height: 1.1; }
-        .detection-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #1e3a1e; font-size: 14px; }
+        .results h2 { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 600; margin-bottom: 24px; color: var(--text-main); display: flex; align-items: center; gap: 10px;}
+        .results h2::before { content: ''; display: inline-block; width: 8px; height: 24px; background: var(--primary); border-radius: 4px; }
+        
+        .result-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; }
+        @media (max-width: 768px) { .result-grid { grid-template-columns: 1fr; } }
+        
+        .result-image-box img, .result-image-box video { width: 100%; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.2);}
+        
+        .stat { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;}
+        .stat strong { font-size: 48px; color: var(--text-main); display: block; line-height: 1; margin-top: 8px; font-family: 'Outfit', sans-serif; font-weight: 700;}
+        
+        .detection-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border-color); font-size: 15px; font-weight: 500; color: var(--text-main);}
         .detection-item:last-child { border-bottom: none; }
-        .det-conf { font-family: 'Space Mono', monospace; font-size: 12px; color: #4caf50; background: #0a1a0a; padding: 3px 8px; border-radius: 20px; }
-        .no-detection { color: #4a7a4a; font-size: 13px; text-align: center; padding: 20px 0; }
-        .video-info { font-family: 'Space Mono', monospace; font-size: 11px; color: #4a7a4a; margin-bottom: 12px; }
-        .action-bar { margin-top: 16px; text-align: center; }
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
+        .det-conf { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--primary); background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 20px; font-weight: 600;}
+        .no-detection { color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px 0; font-style: italic;}
+        
+        .video-info { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--primary); margin-bottom: 16px; font-weight: 500; background: rgba(16,185,129,0.05); padding: 8px 12px; border-radius: 8px; display: inline-block;}
+        
+        /* Sub-headings for Camera Tab */
+        .section-title {font-family: 'Outfit', sans-serif; font-size: 18px; color: var(--text-main); margin-bottom: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;}
+        
+        /* Map and Camera Adjustments */
+        #liveVideo { box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .stats-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); font-weight: 600;}
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .stats-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .stats-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: block;}
+        .stats-val { font-size: 20px; color: var(--text-main); font-family: 'Outfit', sans-serif; font-weight: 600;}
+        
+        .progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; margin-top: 8px;}
+        .progress-fill { height: 100%; background: var(--primary); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .coord-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .coord-table th { text-align: left; padding: 10px; color: var(--text-muted); font-size: 11px; font-weight: 500; text-transform: uppercase; border-bottom: 1px solid var(--border-color);}
+        .coord-table td { padding: 10px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text-main);}
+        .coord-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
         }
     </style>
 </head>
 <body>
-<header style="display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; border-bottom: 1px solid #1e3a1e;">
-    <div>
-        <div class="logo">Agri<span>Vision</span></div>
-        <div class="subtitle" style="margin-left: 0; margin-top: 4px;">// WEED DETECTION v1.0</div>
-    </div>
-    <!-- Uygulamayı Yükle Butonu Kaldırıldı -->
+<header>
+    <div class="logo">Agri<span>Vision</span> AI</div>
+    <div class="subtitle">PRECISION AGRICULTURE PLATFORM</div>
 </header>
 <main>
-    <h1>Yabancı Ot<br><strong>Tespit Sistemi</strong></h1>
-    <p class="desc">Fotoğraf veya video yükle, yapay zeka ile yabancı otları tespit et.</p>
-
-    <!-- Güven Eşiği Negatif Öğrenme Nedeniyle Kaldırılmıştır -->
+    <h1>Akıllı Yabancı Ot<br><strong>Tespit Sistemi</strong></h1>
+    <p class="desc">Gelişmiş bilgisayarlı görü modelleriyle sahadaki yabancı otları anında tespit edin, haritalandırın ve raporlayın.</p>
 
     <div class="tabs">
-        <button class="tab active" id="tabImg" onclick="switchTab('image')">📷 Fotoğraf</button>
-        <button class="tab" id="tabVid" onclick="switchTab('video')">🎥 Video</button>
-        <button class="tab" id="tabCam" onclick="switchTab('camera')">🔴 Canlı Kamera</button>
+        <button class="tab active" id="tabImg" onclick="switchTab('image')">Fotoğraf Analizi</button>
+        <button class="tab" id="tabVid" onclick="switchTab('video')">Video Analizi</button>
+        <button class="tab" id="tabCam" onclick="switchTab('camera')">Canlı İzleme & Harita</button>
     </div>
 
     <div id="imageTab">
-        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            <div class="upload-icon">🌿</div>
-            <h2>Fotoğraf yükle</h2>
-            <p>JPG, PNG desteklenir</p>
-            <input type="file" id="fileInput" accept="image/*">
-            <img id="preview" alt="Önizleme">
-            <div class="file-name" id="imgFileName"></div>
-        </div>
-        <div class="action-bar">
-            <button class="btn" id="detectImgBtn" style="display:none" onclick="detectImage()">Tespit Et</button>
-            <button class="btn btn-outline" id="resetImgBtn" style="display:none" onclick="resetImage()">Temizle</button>
+        <div class="glass-panel">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">🌿</div>
+                <h2>Fotoğraf yükleyin veya sürükleyin</h2>
+                <p>Yüksek çözünürlüklü JPG, PNG dosyaları desteklenir</p>
+                <input type="file" id="fileInput" accept="image/*">
+                <img id="preview" alt="Önizleme">
+                <div class="file-name" id="imgFileName"></div>
+            </div>
+            <div class="action-bar" style="text-align: center;">
+                <button class="btn" id="detectImgBtn" style="display:none" onclick="detectImage()">Yapay Zeka ile Analiz Et</button>
+                <button class="btn btn-outline" id="resetImgBtn" style="display:none" onclick="resetImage()">Temizle</button>
+            </div>
         </div>
     </div>
 
     <div id="videoTab" style="display:none">
-        <div class="upload-area" onclick="document.getElementById('videoInput').click()">
-            <div class="upload-icon">🎬</div>
-            <h2>Video yükle</h2>
-            <p>MP4, MOV, AVI desteklenir</p>
-            <input type="file" id="videoInput" accept="video/*">
-            <video id="videoPreview" controls></video>
-            <div class="file-name" id="videoFileName"></div>
-        </div>
-        <div class="action-bar">
-            <button class="btn" id="detectVideoBtn" style="display:none" onclick="detectVideo()">Videoyu Analiz Et</button>
-            <button class="btn btn-outline" id="resetVideoBtn" style="display:none" onclick="resetVideo()">Temizle</button>
+        <div class="glass-panel">
+            <div class="upload-area" onclick="document.getElementById('videoInput').click()">
+                <div class="upload-icon">🎥</div>
+                <h2>Video yükleyin veya sürükleyin</h2>
+                <p>MP4, MOV, AVI desteklenir. Video sunucuda gerçek zamanlı işlenip size canlı olarak yayınlanacaktır.</p>
+                <input type="file" id="videoInput" accept="video/*">
+                <video id="videoPreview" controls></video>
+                <div class="file-name" id="videoFileName"></div>
+            </div>
+            <div class="action-bar" style="text-align: center;">
+                <button class="btn" id="detectVideoBtn" style="display:none" onclick="detectVideo()">Canlı Akışı Başlat</button>
+                <button class="btn btn-outline" id="resetVideoBtn" style="display:none" onclick="resetVideo()">Temizle</button>
+            </div>
         </div>
     </div>
 
     <div id="cameraTab" style="display:none">
         <div class="result-grid">
-            <div>
-                <h2 style="font-size:16px; margin-bottom:10px; color:#4caf50; font-family: 'Space Mono', monospace;">// KAMERA GÖRÜNTÜSÜ</h2>
-                <video id="liveVideo" autoplay playsinline style="width: 100%; border-radius: 12px; border: 1px solid #1e3a1e; transform: scaleX(-1); background: #000;"></video>
-                <div class="action-bar" style="margin-top: 10px; text-align: left;">
-                    <button class="btn" id="startCamBtn" onclick="startCamera()">Kamerayı Başlat</button>
-                    <button class="btn btn-outline" id="stopCamBtn" style="display:none" onclick="stopCamera()">Durdur</button>
+            <div class="glass-panel">
+                <h2 class="section-title">🔴 KAMERA AKIŞI</h2>
+                <video id="liveVideo" autoplay playsinline style="width: 100%; border-radius: 12px; border: 1px solid var(--border-color); transform: scaleX(-1); background: #000;"></video>
+                <img id="liveResultImg" style="width: 100%; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 16px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+                
+                <div class="action-bar" style="margin-top: 20px;">
+                    <button class="btn" id="startCamBtn" onclick="startCamera()" style="width: 100%;">Kamerayı Başlat</button>
+                    <button class="btn btn-outline" id="stopCamBtn" style="display:none; width: 100%; margin-left: 0; border-color: #ef4444; color: #ef4444;" onclick="stopCamera()">Akışı Durdur</button>
+                </div>
+                
+                <div id="camDetections" class="glass-panel" style="margin-top: 20px; padding: 16px;">
+                    <div class="no-detection">Sistem beklemede.</div>
                 </div>
             </div>
-            <div>
-                <h2 style="font-size:16px; margin-bottom:10px; color:#4caf50; font-family: 'Space Mono', monospace;">// COĞRAFİ ANALİZ VE HASSAS SINIRLANDIRMA</h2>
+            
+            <div class="glass-panel">
+                <h2 class="section-title">🗺️ COĞRAFİ ANALİZ SİSTEMİ</h2>
                 
-                <!-- Tarla Boyutu Giriş Paneli -->
-                <div style="background: #0d150d; border: 1px solid #1e3a1e; border-radius: 12px; padding: 12px; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; font-family: 'Space Mono', monospace;">
+                <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-end;">
                     <div style="flex: 1;">
-                        <label style="font-size: 10px; color: #4a7a4a; display: block; margin-bottom: 2px;">TARLA ENİ (m)</label>
-                        <input type="number" id="fieldWidth" value="50" min="1" style="width: 100%; background: #070b07; border: 1px solid #1e3a1e; color: #fff; padding: 6px; border-radius: 6px; font-size: 12px;">
+                        <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">TARLA ENİ (m)</label>
+                        <input type="number" id="fieldWidth" value="50" min="1" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-family: 'Inter', sans-serif;">
                     </div>
                     <div style="flex: 1;">
-                        <label style="font-size: 10px; color: #4a7a4a; display: block; margin-bottom: 2px;">TARLA BOYU (m)</label>
-                        <input type="number" id="fieldLength" value="100" min="1" style="width: 100%; background: #070b07; border: 1px solid #1e3a1e; color: #fff; padding: 6px; border-radius: 6px; font-size: 12px;">
+                        <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">TARLA BOYU (m)</label>
+                        <input type="number" id="fieldLength" value="100" min="1" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-family: 'Inter', sans-serif;">
                     </div>
-                    <button class="btn" id="startFieldBtn" onclick="drawFieldBoundary()" style="margin-top: 0; padding: 6px 12px; font-size: 11px; border-radius: 6px; height: 32px; align-self: flex-end;">📍 Tarlayı Çiz</button>
+                    <button class="btn" id="startFieldBtn" onclick="drawFieldBoundary()" style="margin-top: 0; padding: 10px 16px;">Sınır Çiz</button>
                 </div>
 
-                <div id="map" style="height: 230px; width: 100%; border-radius: 12px; border: 1px solid #1e3a1e; z-index: 1; margin-bottom: 15px;"></div>
+                <div id="map" style="height: 250px; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); z-index: 1; margin-bottom: 20px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);"></div>
                 
-                <div class="stats-card" style="background: #0d150d; border: 1px solid #1e3a1e; border-radius: 12px; padding: 15px; font-family: 'Space Mono', monospace; color: #4caf50; margin-bottom: 15px;">
-                    <div style="font-size: 14px; border-bottom: 1px solid #1e3a1e; padding-bottom: 8px; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between;">
-                        <span>📊 ALAN ANALİZ RAPORU</span>
-                        <span id="analysisStatus" style="color: #f44336;">[KAPALI]</span>
+                <div class="glass-panel" style="margin-bottom: 20px; padding: 20px;">
+                    <div class="stats-card-header">
+                        <span style="color: var(--primary);">ALAN ANALİZ RAPORU</span>
+                        <span id="analysisStatus" style="color: #ef4444; font-size: 12px; padding: 4px 10px; background: rgba(239, 68, 68, 0.1); border-radius: 20px;">BEKLEMEDE</span>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; margin-bottom: 12px;">
-                        <div>Taranan Kare: <strong id="statsTotalFrames" style="color: #fff;">0</strong></div>
-                        <div>Tahmini Alan: <strong id="statsArea" style="color: #fff;">0 m²</strong></div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                            <span>İSTİLA ORANI (OT / TEMİZ)</span>
-                            <span id="statsRatioVal" style="font-weight: bold;">%0</span>
+                    <div class="stats-grid">
+                        <div class="stats-box">
+                            <span class="stats-label">Taranan Kare</span>
+                            <span class="stats-val" id="statsTotalFrames">0</span>
                         </div>
-                        <div style="width: 100%; height: 8px; background: #070b07; border-radius: 4px; overflow: hidden; border: 1px solid #1e3a1e;">
-                            <div id="statsRatioBar" style="width: 0%; height: 100%; background: #4caf50; transition: width 0.3s;"></div>
+                        <div class="stats-box">
+                            <span class="stats-label">Tahmini Alan</span>
+                            <span class="stats-val" id="statsArea">0 m²</span>
                         </div>
                     </div>
-                    <div style="font-size: 11px; border-top: 1px solid #1e3a1e; padding-top: 8px;">
-                        <span style="color: #4a7a4a;">Bölgesel Ot Dağılımı:</span>
-                        <div id="statsWeedList" style="margin-top: 5px; color: #fff; max-height: 80px; overflow-y: auto;">
-                            -
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; font-weight: 500;">
+                            <span style="color: var(--text-muted);">İSTİLA ORANI (OT / TEMİZ)</span>
+                            <span id="statsRatioVal" style="color: var(--text-main);">%0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="statsRatioBar" class="progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                        <span style="color: var(--text-muted); font-size: 12px; font-weight: 500; display: block; margin-bottom: 12px;">BÖLGESEL OT DAĞILIMI:</span>
+                        <div id="statsWeedList" style="max-height: 100px; overflow-y: auto;">
+                            <span style="color: var(--text-muted); font-size: 13px; font-style: italic;">Veri yok.</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Hassas Yabancı Ot Koordinat Raporu ve CSV İndirme Butonu -->
-                <div style="background: #0d150d; border: 1px solid #1e3a1e; border-radius: 12px; padding: 15px; font-family: 'Space Mono', monospace; margin-bottom: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e3a1e; padding-bottom: 8px; margin-bottom: 10px;">
-                        <span style="font-size: 12px; color: #4caf50; font-weight: bold;">🌿 HASSAS KOORDİNAT RAPORU</span>
-                        <button class="btn" onclick="downloadCSV()" style="margin-top:0; padding: 4px 8px; font-size: 10px; border-radius: 4px;">📥 CSV İndir</button>
+                <div class="glass-panel" style="padding: 20px;">
+                    <div class="stats-card-header" style="margin-bottom: 12px;">
+                        <span style="color: var(--text-main);">KOORDİNAT RAPORU</span>
+                        <button class="btn btn-outline" onclick="downloadCSV()" style="margin-top:0; padding: 6px 12px; font-size: 12px;">CSV İndir</button>
                     </div>
-                    <div style="max-height: 120px; overflow-y: auto; font-size: 10px; color: #b2dfdb;">
-                        <table style="width: 100%; border-collapse: collapse;">
+                    <div style="max-height: 150px; overflow-y: auto;">
+                        <table class="coord-table">
                             <thead>
-                                <tr style="border-bottom: 1px solid #1e3a1e; text-align: left; color: #4a7a4a;">
-                                    <th style="padding-bottom: 4px;">OT TÜRÜ</th>
-                                    <th style="padding-bottom: 4px;">ENLEM (LAT)</th>
-                                    <th style="padding-bottom: 4px;">BOYLAM (LNG)</th>
-                                    <th style="padding-bottom: 4px;">CONF</th>
+                                <tr>
+                                    <th>TÜR</th>
+                                    <th>LAT</th>
+                                    <th>LNG</th>
+                                    <th>GÜVEN</th>
                                 </tr>
                             </thead>
                             <tbody id="coordinateTableBody">
-                                <tr>
-                                    <td colspan="4" style="text-align: center; color: #4a7a4a; padding: 10px 0;">Henüz veri toplanmadı.</td>
-                                </tr>
+                                <tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">Kayıt bulunamadı.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-                <div id="camDetections" class="detections-box" style="padding: 10px;">
-                    <div class="no-detection">Kamera kapalı.</div>
-                </div>
             </div>
         </div>
-        <img id="liveResultImg" style="width: 100%; border-radius: 12px; border: 1px solid #1e3a1e; margin-top: 20px; display: none;" />
         <canvas id="hiddenCanvas" style="display:none;"></canvas>
     </div>
 
     <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p id="loadingText">Analiz yapılıyor...</p>
+        <p id="loadingText" style="font-weight: 500; letter-spacing: 0.5px;">Yapay zeka analiz ediyor...</p>
     </div>
 
     <div class="results" id="results">
-        <h2>// SONUÇLAR</h2>
+        <h2>Sistem Analiz Sonuçları</h2>
         <div class="result-grid">
             <div class="result-image-box">
                 <img id="resultImg" alt="Sonuç">
-                <video id="resultVidPlayer" controls style="display:none; width: 100%; border-radius: 12px; border: 1px solid #1e3a1e;"></video>
+                <video id="resultVidPlayer" controls style="display:none;"></video>
             </div>
-            <div class="detections-box">
-                <div class="stat">TOPLAM TESPİT<strong id="totalCount">0</strong></div>
+            <div class="glass-panel">
+                <div class="stat">TOPLAM TESPİT EDİLEN YABANCI OT<strong id="totalCount">0</strong></div>
                 <div class="video-info" id="videoInfo" style="display:none"></div>
-                <div id="detectionList"></div>
+                <div id="detectionList" style="margin-top: 20px;"></div>
             </div>
         </div>
     </div>
 </main>
 
 <script>
-    // Slider JS kaldırıldı
-
     function switchTab(tab) {
         document.getElementById('tabImg').classList.toggle('active', tab === 'image');
         document.getElementById('tabVid').classList.toggle('active', tab === 'video');
         document.getElementById('tabCam').classList.toggle('active', tab === 'camera');
+        
         document.getElementById('imageTab').style.display = tab === 'image' ? 'block' : 'none';
         document.getElementById('videoTab').style.display = tab === 'video' ? 'block' : 'none';
         document.getElementById('cameraTab').style.display = tab === 'camera' ? 'block' : 'none';
+        
         document.getElementById('results').style.display = 'none';
+        document.getElementById('loading').style.display = 'none';
+        
+        socket.emit('stop_video_stream'); // Hangi taba geçilirse geçilsin, arkada video işleniyorsa durdur!
+        
         if (tab !== 'camera') stopCamera();
         if (tab === 'camera') {
-            if (!map) {
-                initMap();
-            }
-            // Tablar arası geçişte haritanın gri/kırık kalmasını engelleyen hayati invalidate komutu:
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                }
-            }, 300);
+            if (!map) initMap();
+            setTimeout(() => { if (map) map.invalidateSize(); }, 300);
         }
     }
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
-        e.stopPropagation();
         const file = this.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -263,7 +389,6 @@
     });
 
     document.getElementById('videoInput').addEventListener('change', function(e) {
-        e.stopPropagation();
         const file = this.files[0];
         if (!file) return;
         const video = document.getElementById('videoPreview');
@@ -282,9 +407,7 @@
         document.getElementById('detectImgBtn').style.display = 'none';
         document.getElementById('resetImgBtn').style.display = 'none';
         document.getElementById('results').style.display = 'none';
-        document.getElementById('resultImg').style.display = 'none';
-        document.getElementById('resultVidPlayer').style.display = 'none';
-        document.getElementById('resultVidPlayer').pause();
+        socket.emit('stop_video_stream');
     }
 
     function resetVideo() {
@@ -294,9 +417,7 @@
         document.getElementById('detectVideoBtn').style.display = 'none';
         document.getElementById('resetVideoBtn').style.display = 'none';
         document.getElementById('results').style.display = 'none';
-        document.getElementById('resultImg').style.display = 'none';
-        document.getElementById('resultVidPlayer').style.display = 'none';
-        document.getElementById('resultVidPlayer').pause();
+        socket.emit('stop_video_stream');
     }
 
     function showLoading(text) {
@@ -313,27 +434,15 @@
         const imgElement = document.getElementById('resultImg');
         const vidElement = document.getElementById('resultVidPlayer');
 
-        if (data.type === 'video') {
-            imgElement.style.display = 'none';
-            vidElement.style.display = 'block';
-            vidElement.src = data.video_url + '?t=' + new Date().getTime();
-            
-            document.getElementById('videoInfo').style.display = 'block';
-            document.getElementById('videoInfo').textContent = data.frames + ' frame işlendi';
-            document.getElementById('detectionList').innerHTML = data.detections.length === 0
-                ? '<div class="no-detection">Yabancı ot tespit edilmedi.</div>'
-                : data.detections.map(d => `<div class="detection-item"><span>${d.class}</span><span class="det-conf">${d.count}x · %${d.avg_confidence}</span></div>`).join('');
-        } else {
-            vidElement.style.display = 'none';
-            vidElement.pause();
-            imgElement.style.display = 'block';
-            imgElement.src = 'data:image/jpeg;base64,' + data.result_image;
-            
-            document.getElementById('videoInfo').style.display = 'none';
-            document.getElementById('detectionList').innerHTML = data.detections.length === 0
-                ? '<div class="no-detection">Yabancı ot tespit edilmedi.</div>'
-                : data.detections.map(d => `<div class="detection-item"><span>${d.class}</span><span class="det-conf">%${d.confidence}</span></div>`).join('');
-        }
+        vidElement.style.display = 'none';
+        vidElement.pause();
+        imgElement.style.display = 'block';
+        imgElement.src = 'data:image/jpeg;base64,' + data.result_image;
+        
+        document.getElementById('videoInfo').style.display = 'none';
+        document.getElementById('detectionList').innerHTML = data.detections.length === 0
+            ? '<div class="no-detection">Yabancı ot tespit edilmedi.</div>'
+            : data.detections.map(d => `<div class="detection-item"><span>${d.class}</span><span class="det-conf">%${d.confidence}</span></div>`).join('');
     }
 
     function detectImage() {
@@ -342,103 +451,130 @@
         const formData = new FormData();
         formData.append('file', file);
 
-        showLoading('Fotoğraf analiz ediliyor...');
+        showLoading('Görsel yapay zeka tarafından işleniyor...');
         document.getElementById('detectImgBtn').disabled = true;
         fetch('/detect_image', { method: 'POST', body: formData })
             .then(async r => {
                 const data = await r.json();
-                if (!r.ok) throw new Error(data.error || 'Bilinmeyen bir sunucu hatası oluştu');
+                if (!r.ok) throw new Error(data.error || 'Sunucu hatası');
                 return data;
             })
             .then(data => { showResults(data); document.getElementById('detectImgBtn').disabled = false; })
             .catch(err => { document.getElementById('loading').style.display = 'none'; alert('Hata: ' + err.message); document.getElementById('detectImgBtn').disabled = false; });
     }
 
+    // --- SOCKET.IO & LIVE STREAMING LOGIC ---
+    let socket = io();
+
+    // Video Streaming
     function detectVideo() {
         const file = document.getElementById('videoInput').files[0];
         if (!file) return;
         const formData = new FormData();
         formData.append('file', file);
 
-        showLoading('Video işleniyor, bu biraz sürebilir...');
+        showLoading('Video sunucuya yükleniyor...');
         document.getElementById('detectVideoBtn').disabled = true;
+        
         fetch('/detect_video', { method: 'POST', body: formData })
             .then(async r => {
                 const data = await r.json();
-                if (!r.ok) throw new Error(data.error || 'Bilinmeyen bir sunucu hatası oluştu');
+                if (!r.ok) throw new Error(data.error || 'Sunucu hatası');
                 return data;
             })
-            .then(data => { showResults(data); document.getElementById('detectVideoBtn').disabled = false; })
-            .catch(err => { document.getElementById('loading').style.display = 'none'; alert('Hata: ' + err.message); document.getElementById('detectVideoBtn').disabled = false; });
+            .then(data => { 
+                if(data.type === 'video_stream') {
+                    // Start receiving the live stream
+                    document.getElementById('loadingText').textContent = "Canlı video analizi başlatılıyor...";
+                    document.getElementById('results').style.display = 'block';
+                    
+                    document.getElementById('resultVidPlayer').style.display = 'none';
+                    document.getElementById('resultImg').style.display = 'none';
+                    document.getElementById('detectionList').innerHTML = '';
+                    document.getElementById('totalCount').textContent = '...';
+                    
+                    socket.emit('start_video_stream', { video_id: data.video_id });
+                }
+            })
+            .catch(err => { 
+                document.getElementById('loading').style.display = 'none'; 
+                alert('Hata: ' + err.message); 
+                document.getElementById('detectVideoBtn').disabled = false; 
+            });
     }
 
-    // PWA altyapısı kaldırılmıştır (saf mobil/PC web uygulaması)
+    socket.on('video_stream_frame', data => {
+        document.getElementById('loading').style.display = 'none';
+        const imgElement = document.getElementById('resultImg');
+        imgElement.style.display = 'block';
+        imgElement.src = data.image;
 
-    // Kamera, Harita (Socket.IO, Leaflet & Heatmap) Mantığı
+        document.getElementById('videoInfo').style.display = 'inline-block';
+        document.getElementById('videoInfo').textContent = 'Canlı Analiz: ' + data.frame_number + ' Kare İşlendi';
+
+        document.getElementById('detectionList').innerHTML = data.detections.length === 0
+            ? '<div class="no-detection">Bu karede ot bulunamadı.</div>'
+            : data.detections.map(d => `<div class="detection-item"><span>${d.class}</span><span class="det-conf">%${d.confidence}</span></div>`).join('');
+    });
+
+    socket.on('video_stream_done', data => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('detectVideoBtn').disabled = false;
+        document.getElementById('videoInfo').textContent = 'Analiz Tamamlandı: Toplam ' + data.frames + ' Kare';
+        document.getElementById('totalCount').textContent = data.total;
+        
+        document.getElementById('detectionList').innerHTML = data.summary.length === 0
+            ? '<div class="no-detection">Videonun hiçbir yerinde yabancı ot bulunamadı.</div>'
+            : data.summary.map(d => `<div class="detection-item"><span>${d.class}</span><span class="det-conf">${d.count} Adet · %${d.avg_confidence}</span></div>`).join('');
+    });
+
+    socket.on('video_stream_error', data => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('detectVideoBtn').disabled = false;
+        alert('Video Akış Hatası: ' + data.error);
+    });
+
+    // Camera, Map & Coordinates Logic
     let map = null;
-    let socket = io();
     let videoStream = null;
     let frameInterval = null;
     let userLocation = null;
-    
-    // Isı Haritası (Heatmap) ve İstatistik Değişkenleri
     let heatLayer = null;
     let heatPoints = [];
     let sessionTotalFrames = 0;
     let sessionWeedyFrames = 0;
     let sessionWeeds = {};
-    
-    // Hassas Koordinat Raporu Dizisi ve Tarla Sınır Nesnesi
     let fieldCoordinates = [];
     let fieldPolygon = null;
 
     function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371000; // Earth radius in meters
+        const R = 6371000;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
     function initMap() {
-        // Varsayılan konum
         map = L.map('map').setView([39.92077, 32.85411], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Isı haritasını başlat (Leaflet.heat eklentisiyle)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OS' }).addTo(map);
         heatPoints = [];
         heatLayer = L.heatLayer(heatPoints, {radius: 25, blur: 15, maxZoom: 17}).addTo(map);
 
-        // Haritaya çift tıklama ile konum belirleme desteği (GPS kapalı veya jüride test etmek için)
         map.on('dblclick', function(e) {
             userLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
-            L.popup()
-                .setLatLng(e.latlng)
-                .setContent("<b>📍 Tarla Başlangıç Köşesi Seçildi!</b><br>Tarlanın başlangıç noktası burası olarak ayarlandı. Şimdi yukarıdan en-boy girip 'Tarlayı Çiz' diyebilirsiniz.")
-                .openOn(map);
+            L.popup().setLatLng(e.latlng).setContent("<b>📍 Tarla Başlangıç Köşesi Seçildi!</b><br>Şimdi 'Sınır Çiz' butonuna basabilirsiniz.").openOn(map);
         });
-        
-        map.doubleClickZoom.disable(); // Çift tıklamada harita yakınlaşmasını kapatıyoruz ki poligon çizmek kolay olsun
+        map.doubleClickZoom.disable();
 
-        // Kullanıcının konumunu izle
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(pos => {
                 userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 map.setView([userLocation.lat, userLocation.lng], 16);
-                L.marker([userLocation.lat, userLocation.lng]).addTo(map).bindPopup("<b>📍 GPS Başlangıç Konumunuz</b>").openPopup();
+                L.marker([userLocation.lat, userLocation.lng]).addTo(map).bindPopup("<b>📍 Gerçek GPS Konumunuz</b>").openPopup();
             }, err => {
-                // Konum alınamazsa varsayılan şeker pancarı tarlası simülasyonu koordinatlarına odaklan
-                const fallbackCoords = [39.92077, 32.85411];
-                map.setView(fallbackCoords, 14);
-                L.popup()
-                    .setLatLng(fallbackCoords)
-                    .setContent("<b>ℹ️ GPS Konumu Alınamadı / Engellendi</b><br>Tarlayı harita üzerinde simüle etmek için <b>haritada istediğiniz yere ÇİFT TIKLAYIN!</b>")
-                    .openOn(map);
+                map.setView([39.92077, 32.85411], 14);
+                L.popup().setLatLng([39.92077, 32.85411]).setContent("<b>ℹ️ GPS Kapalı</b><br>Haritada istediğiniz yere ÇİFT TIKLAYIN!").openOn(map);
             }, { enableHighAccuracy: true });
         }
     }
@@ -448,26 +584,26 @@
             videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             const video = document.getElementById('liveVideo');
             video.srcObject = videoStream;
+            
             document.getElementById('startCamBtn').style.display = 'none';
             document.getElementById('stopCamBtn').style.display = 'inline-block';
-            document.getElementById('camDetections').innerHTML = '<div class="no-detection">Analiz ediliyor...</div>';
+            document.getElementById('liveVideo').style.display = 'none';
+            document.getElementById('liveResultImg').style.display = 'block';
+            document.getElementById('camDetections').innerHTML = '<div class="no-detection">Kamera ısınmakta...</div>';
 
-            // İstatistikleri sıfırla
-            sessionTotalFrames = 0;
-            sessionWeedyFrames = 0;
-            sessionWeeds = {};
-            heatPoints = [];
-            fieldCoordinates = [];
-            document.getElementById('coordinateTableBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #4a7a4a; padding: 10px 0;">Henüz veri toplanmadı.</td></tr>';
+            sessionTotalFrames = 0; sessionWeedyFrames = 0; sessionWeeds = {}; heatPoints = []; fieldCoordinates = [];
+            document.getElementById('coordinateTableBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">Henüz kayıt yok.</td></tr>';
             if (heatLayer) heatLayer.setLatLngs([]);
             
-            document.getElementById('analysisStatus').textContent = '[AKTİF]';
-            document.getElementById('analysisStatus').style.color = '#4caf50';
+            document.getElementById('analysisStatus').textContent = 'AKTİF';
+            document.getElementById('analysisStatus').style.color = 'var(--primary)';
+            document.getElementById('analysisStatus').style.background = 'rgba(16, 185, 129, 0.1)';
+            
             document.getElementById('statsTotalFrames').textContent = '0';
             document.getElementById('statsArea').textContent = '0 m²';
             document.getElementById('statsRatioVal').textContent = '%0';
             document.getElementById('statsRatioBar').style.width = '0%';
-            document.getElementById('statsWeedList').innerHTML = '<span style="color: #4a7a4a;">Henüz ot tespit edilmedi.</span>';
+            document.getElementById('statsWeedList').innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Kayıt yok.</span>';
 
             const canvas = document.getElementById('hiddenCanvas');
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -477,13 +613,10 @@
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const dataURL = canvas.toDataURL('image/jpeg', 0.5); // %50 kalite
-                    socket.emit('process_frame', dataURL);
+                    socket.emit('process_frame', canvas.toDataURL('image/jpeg', 0.5));
                 }
-            }, 1000); // Saniyede 1 kare gönder
-        } catch (err) {
-            alert("Kamera açılamadı: " + err.message);
-        }
+            }, 800); 
+        } catch (err) { alert("Kamera açılamadı: " + err.message); }
     }
 
     function stopCamera() {
@@ -494,224 +627,117 @@
         }
         document.getElementById('startCamBtn').style.display = 'inline-block';
         document.getElementById('stopCamBtn').style.display = 'none';
+        document.getElementById('liveVideo').style.display = 'block';
         document.getElementById('liveResultImg').style.display = 'none';
         document.getElementById('camDetections').innerHTML = '<div class="no-detection">Kamera kapalı.</div>';
         
-        document.getElementById('analysisStatus').textContent = '[DURDURULDU]';
-        document.getElementById('analysisStatus').style.color = '#ff9800';
+        document.getElementById('analysisStatus').textContent = 'DURDURULDU';
+        document.getElementById('analysisStatus').style.color = '#f59e0b';
+        document.getElementById('analysisStatus').style.background = 'rgba(245, 158, 11, 0.1)';
     }
 
     socket.on('frame_result', data => {
-        const resultImg = document.getElementById('liveResultImg');
-        resultImg.src = data.image;
-        resultImg.style.display = 'block';
-
+        document.getElementById('liveResultImg').src = data.image;
         const camDetections = document.getElementById('camDetections');
         
-        // Kare sayacını ve alan ölçümünü güncelle
         sessionTotalFrames += 1;
         document.getElementById('statsTotalFrames').textContent = sessionTotalFrames;
         document.getElementById('statsArea').textContent = Math.round(sessionTotalFrames * 1.5) + ' m²';
 
         if (data.detections.length === 0) {
-            camDetections.innerHTML = '<div class="no-detection">Yabancı ot tespit edilmedi.</div>';
+            camDetections.innerHTML = '<div class="no-detection">Bu karede ot yok.</div>';
         } else {
             sessionWeedyFrames += 1;
             camDetections.innerHTML = data.detections.map(d => `<div class="detection-item"><span>${d.class}</span><span class="det-conf">%${d.confidence}</span></div>`).join('');
             
             let newUniqueDetections = [];
-
-            // Otları topla, ısı haritasını besle ve mekansal tekilleştirme ile koordinat listesini güncelle
             data.detections.forEach(d => {
-                let latVal = 0.0;
-                let lngVal = 0.0;
+                let latVal = 0.0; let lngVal = 0.0;
                 if (userLocation) {
-                    latVal = userLocation.lat;
-                    lngVal = userLocation.lng;
-                    
-                    // Simülatör modunda (sabit durulurken) haritada üst üste binmesinler diye hafif rastgele 1-2m saçılma yap
-                    latVal += (Math.random() - 0.5) * 0.00003;
-                    lngVal += (Math.random() - 0.5) * 0.00003;
+                    latVal = userLocation.lat + (Math.random() - 0.5) * 0.00003;
+                    lngVal = userLocation.lng + (Math.random() - 0.5) * 0.00003;
                 }
 
-                // MEKANSAL TEKİLLEŞTİRME (2.5 metre kuralı):
-                // Eğer 2.5 metre çapında AYNI OT TÜRÜNDEN zaten tespit edildiyse, bunu mükerrer say ve ekleme!
-                let isDuplicate = false;
-                for (let i = 0; i < fieldCoordinates.length; i++) {
-                    const existing = fieldCoordinates[i];
-                    if (existing.class === d.class) {
-                        const dist = getDistance(latVal, lngVal, existing.lat, existing.lng);
-                        if (dist < 2.5) {
-                            isDuplicate = true;
-                            break;
-                        }
-                    }
-                }
+                let isDuplicate = fieldCoordinates.some(existing => existing.class === d.class && getDistance(latVal, lngVal, existing.lat, existing.lng) < 2.5);
 
                 if (!isDuplicate) {
                     sessionWeeds[d.class] = (sessionWeeds[d.class] || 0) + 1;
-                    
                     if (userLocation && map) {
                         heatPoints.push([latVal, lngVal, 0.8]);
                         if (heatLayer) heatLayer.setLatLngs(heatPoints);
                     }
 
-                    const newWeed = {
-                        class: d.class,
-                        lat: latVal,
-                        lng: lngVal,
-                        confidence: d.confidence,
-                        time: new Date().toLocaleTimeString()
-                    };
-
+                    const newWeed = { class: d.class, lat: latVal, lng: lngVal, confidence: d.confidence, time: new Date().toLocaleTimeString() };
                     fieldCoordinates.push(newWeed);
                     newUniqueDetections.push(newWeed);
 
-                    // Haritaya sadece Benzersiz Otlar için parlayan kırmızı pin atıyoruz
                     if (userLocation && map) {
                         const redDotIcon = L.divIcon({
                             className: 'custom-weed-marker',
-                            html: "<div style='background-color:#f44336; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 8px #f44336; animation: pulse 1.5s infinite;'></div>",
-                            iconSize: [16, 16],
-                            iconAnchor: [8, 8]
+                            html: "<div style='background-color:#ef4444; width:16px; height:16px; border-radius:50%; border:2px solid #fff; animation: pulse-ring 1.5s infinite;'></div>",
+                            iconSize: [16, 16], iconAnchor: [8, 8]
                         });
-
-                        L.marker([latVal, lngVal], { icon: redDotIcon })
-                            .addTo(map)
-                            .bindPopup(`<b>🌿 Benzersiz Yabancı Ot:</b> ${d.class}<br><b>🎯 Güven Oranı:</b> %${d.confidence}<br><b>⏰ Tespit Zamanı:</b> ${newWeed.time}`);
+                        L.marker([latVal, lngVal], { icon: redDotIcon }).addTo(map)
+                            .bindPopup(`<b>🌿 Yeni Ot:</b> ${d.class}<br><b>🎯 Güven:</b> %${d.confidence}<br><b>⏰ Zaman:</b> ${newWeed.time}`);
                     }
                 }
             });
 
-            // Tabloyu sadece gerçekten yepyeni olan benzersiz otlar için güncelle
             const tableBody = document.getElementById('coordinateTableBody');
             if (tableBody && newUniqueDetections.length > 0) {
-                if (tableBody.innerHTML.includes("Henüz veri toplanmadı") || tableBody.innerHTML.includes("Kamera kapalı")) {
-                    tableBody.innerHTML = '';
-                }
+                if (tableBody.innerHTML.includes("Kayıt bulunamadı") || tableBody.innerHTML.includes("Kamera kapalı")) tableBody.innerHTML = '';
                 newUniqueDetections.forEach(w => {
-                    const rowHtml = `<tr style="border-bottom: 1px solid #0d1a0d;">
-                        <td style="padding: 4px 0; color: #fff;">🌿 ${w.class}</td>
-                        <td style="padding: 4px 0; font-family: monospace;">${w.lat.toFixed(6)}</td>
-                        <td style="padding: 4px 0; font-family: monospace;">${w.lng.toFixed(6)}</td>
-                        <td style="padding: 4px 0; color: #4caf50;">%${w.confidence}</td>
-                    </tr>`;
-                    tableBody.insertAdjacentHTML('afterbegin', rowHtml);
+                    tableBody.insertAdjacentHTML('afterbegin', `<tr><td>🌿 ${w.class}</td><td style="font-family:monospace">${w.lat.toFixed(6)}</td><td style="font-family:monospace">${w.lng.toFixed(6)}</td><td style="color:var(--primary)">%${w.confidence}</td></tr>`);
                 });
             }
         }
 
-        // İstila oranı ve barını güncelle
         const ratio = sessionTotalFrames > 0 ? Math.round((sessionWeedyFrames / sessionTotalFrames) * 100) : 0;
         document.getElementById('statsRatioVal').textContent = '%' + ratio;
         const ratioBar = document.getElementById('statsRatioBar');
         if (ratioBar) {
             ratioBar.style.width = ratio + '%';
-            if (ratio > 40) {
-                ratioBar.style.background = '#f44336'; // Yüksek risk
-            } else if (ratio > 15) {
-                ratioBar.style.background = '#ff9800'; // Orta risk
-            } else {
-                ratioBar.style.background = '#4caf50'; // Düşük risk
-            }
+            ratioBar.style.background = ratio > 40 ? '#ef4444' : (ratio > 15 ? '#f59e0b' : '#10b981');
         }
 
-        // Bölgesel Ot Dağılım Listesi
         const weedEntries = Object.entries(sessionWeeds);
         const statsList = document.getElementById('statsWeedList');
         if (statsList) {
-            if (weedEntries.length === 0) {
-                statsList.innerHTML = '<span style="color: #4a7a4a;">Henüz ot tespit edilmedi.</span>';
-            } else {
-                statsList.innerHTML = weedEntries.map(([name, count]) => {
-                    return `<div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                        <span>🌿 ${name}</span>
-                        <strong style="color: #4caf50;">${count} Adet</strong>
-                    </div>`;
-                }).join('');
-            }
+            statsList.innerHTML = weedEntries.length === 0 
+                ? '<span style="color: var(--text-muted); font-size: 13px;">Kayıt yok.</span>'
+                : weedEntries.map(([name, count]) => `<div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;"><span>🌿 ${name}</span><strong style="color: var(--primary);">${count} Adet</strong></div>`).join('');
         }
     });
 
     function drawFieldBoundary() {
-        let startLat, startLng;
-        
-        if (userLocation) {
-            startLat = userLocation.lat;
-            startLng = userLocation.lng;
-        } else {
-            // Eğer GPS kapalıysa ve çift tıklanmadıysa haritanın tam merkez noktasını baz al
-            const center = map.getCenter();
-            startLat = center.lat;
-            startLng = center.lng;
-            userLocation = { lat: startLat, lng: startLng };
-        }
+        if (!userLocation) userLocation = { lat: map.getCenter().lat, lng: map.getCenter().lng };
+        const w = parseFloat(document.getElementById('fieldWidth').value);
+        const l = parseFloat(document.getElementById('fieldLength').value);
+        if (isNaN(w) || isNaN(l) || w <= 0 || l <= 0) return alert("Geçerli boyutlar girin.");
 
-        const width = parseFloat(document.getElementById('fieldWidth').value);
-        const length = parseFloat(document.getElementById('fieldLength').value);
-        if (isNaN(width) || isNaN(length) || width <= 0 || length <= 0) {
-            alert("Lütfen geçerli bir en ve boy girin.");
-            return;
-        }
+        if (fieldPolygon) map.removeLayer(fieldPolygon);
+        const latOffset = l / 111111;
+        const lngOffset = w / (111111 * Math.cos(userLocation.lat * Math.PI / 180));
 
-        // Mevcut sınır çizilmişse haritadan kaldır
-        if (fieldPolygon) {
-            map.removeLayer(fieldPolygon);
-        }
+        const p1 = [userLocation.lat, userLocation.lng];
+        const p2 = [userLocation.lat + latOffset, userLocation.lng];
+        const p3 = [userLocation.lat + latOffset, userLocation.lng + lngOffset];
+        const p4 = [userLocation.lat, userLocation.lng + lngOffset];
 
-        // 1 Enlem Derecesi = ~111,111 metre
-        // 1 Boylam Derecesi = ~111,111 * cos(lat) metre
-        const latMeters = 111111;
-        const lngMeters = 111111 * Math.cos(startLat * Math.PI / 180);
-
-        const latOffset = length / latMeters;
-        const lngOffset = width / lngMeters;
-
-        // Tarla sınır koordinatları (Dikdörtgen Poligon)
-        const corner1 = [startLat, startLng];
-        const corner2 = [startLat + latOffset, startLng];
-        const corner3 = [startLat + latOffset, startLng + lngOffset];
-        const corner4 = [startLat, startLng + lngOffset];
-
-        // Haritada yeşil yarı-şeffaf tarla alanını göster
-        fieldPolygon = L.polygon([corner1, corner2, corner3, corner4], {
-            color: '#4caf50',
-            fillColor: '#81c784',
-            fillOpacity: 0.12,
-            weight: 3,
-            dashArray: '5, 8'
-        }).addTo(map);
-
-        // Haritayı tarlaya sığdır
+        fieldPolygon = L.polygon([p1, p2, p3, p4], { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.1, weight: 2, dashArray: '5, 8' }).addTo(map);
         map.fitBounds(fieldPolygon.getBounds());
-
-        L.popup()
-            .setLatLng(corner1)
-            .setContent(`<b>🟢 Tarla Sınırlandırıldı!</b><br>Boyutlar: ${width}m x ${length}m<br>Başlangıç Koordinatı: ${startLat.toFixed(6)}, ${startLng.toFixed(6)}`)
-            .openOn(map);
     }
 
     function downloadCSV() {
-        if (fieldCoordinates.length === 0) {
-            alert("İndirilecek ot tespit verisi henüz bulunmuyor.");
-            return;
-        }
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Ot Turu,Enlem (Lat),Boylam (Lng),Dogruluk Orani (%),Zaman\n";
-
-        fieldCoordinates.forEach(row => {
-            csvContent += `"${row.class}",${row.lat},${row.lng},${row.confidence},"${row.time}"\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
+        if (fieldCoordinates.length === 0) return alert("İndirilecek veri yok.");
+        let csv = "data:text/csv;charset=utf-8,Ot Turu,Enlem,Boylam,Dogruluk (%),Zaman\n" + fieldCoordinates.map(r => `"${r.class}",${r.lat},${r.lng},${r.confidence},"${r.time}"`).join('\n');
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `agrivision_tarla_koordinat_raporu_${new Date().toISOString().slice(0,10)}.csv`);
+        link.href = encodeURI(csv);
+        link.download = `tarla_raporu_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     }
-
 </script>
 </body>
 </html>
