@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024 # 5 GB video upload limit
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-model = YOLO('models/best_v3.pt')
+model = YOLO('models/best_v5.pt')
 
 UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
