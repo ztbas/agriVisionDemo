@@ -12,7 +12,7 @@ IMG_SIZE = 640
 BATCH    = 16        # GPU yoksa 8'e dusurebilirsin
 WORKERS  = 4
 PROJECT  = "runs"
-NAME     = "agrivision_v3"
+NAME     = "agrivision_v5"
 
 
 def main():
@@ -51,7 +51,7 @@ def main():
         copy_paste=0.1,
         rect=False,
         amp=True,           # Mixed precision (varsa GPU hizlandirir)
-        device="cpu",
+        device="cuda" if __import__("torch").cuda.is_available() else "cpu",
         plots=True,
         verbose=True,
     )
