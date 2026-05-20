@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriVision AI</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -201,7 +199,7 @@
     <div class="tabs">
         <button class="tab active" id="tabImg" onclick="switchTab('image')">Fotoğraf Analizi</button>
         <button class="tab" id="tabVid" onclick="switchTab('video')">Video Analizi</button>
-        <button class="tab" id="tabCam" onclick="switchTab('camera')">Canlı İzleme & Harita</button>
+
     </div>
 
     <div id="imageTab">
@@ -238,97 +236,7 @@
         </div>
     </div>
 
-    <div id="cameraTab" style="display:none">
-        <div class="result-grid">
-            <div class="glass-panel">
-                <h2 class="section-title">🔴 KAMERA AKIŞI</h2>
-                <video id="liveVideo" autoplay playsinline style="width: 100%; border-radius: 12px; border: 1px solid var(--border-color); transform: scaleX(-1); background: #000;"></video>
-                <img id="liveResultImg" style="width: 100%; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 16px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
-                
-                <div class="action-bar" style="margin-top: 20px;">
-                    <button class="btn" id="startCamBtn" onclick="startCamera()" style="width: 100%;">Kamerayı Başlat</button>
-                    <button class="btn btn-outline" id="stopCamBtn" style="display:none; width: 100%; margin-left: 0; border-color: #ef4444; color: #ef4444;" onclick="stopCamera()">Akışı Durdur</button>
-                </div>
-                
-                <div id="camDetections" class="glass-panel" style="margin-top: 20px; padding: 16px;">
-                    <div class="no-detection">Sistem beklemede.</div>
-                </div>
-            </div>
-            
-            <div class="glass-panel">
-                <h2 class="section-title">🗺️ COĞRAFİ ANALİZ SİSTEMİ</h2>
-                
-                <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-end;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">TARLA ENİ (m)</label>
-                        <input type="number" id="fieldWidth" value="50" min="1" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-family: 'Inter', sans-serif;">
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">TARLA BOYU (m)</label>
-                        <input type="number" id="fieldLength" value="100" min="1" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-family: 'Inter', sans-serif;">
-                    </div>
-                    <button class="btn" id="startFieldBtn" onclick="drawFieldBoundary()" style="margin-top: 0; padding: 10px 16px;">Sınır Çiz</button>
-                </div>
 
-                <div id="map" style="height: 250px; width: 100%; border-radius: 12px; border: 1px solid var(--border-color); z-index: 1; margin-bottom: 20px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);"></div>
-                
-                <div class="glass-panel" style="margin-bottom: 20px; padding: 20px;">
-                    <div class="stats-card-header">
-                        <span style="color: var(--primary);">ALAN ANALİZ RAPORU</span>
-                        <span id="analysisStatus" style="color: #ef4444; font-size: 12px; padding: 4px 10px; background: rgba(239, 68, 68, 0.1); border-radius: 20px;">BEKLEMEDE</span>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stats-box">
-                            <span class="stats-label">Taranan Kare</span>
-                            <span class="stats-val" id="statsTotalFrames">0</span>
-                        </div>
-                        <div class="stats-box">
-                            <span class="stats-label">Tahmini Alan</span>
-                            <span class="stats-val" id="statsArea">0 m²</span>
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; font-weight: 500;">
-                            <span style="color: var(--text-muted);">İSTİLA ORANI (OT / TEMİZ)</span>
-                            <span id="statsRatioVal" style="color: var(--text-main);">%0</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div id="statsRatioBar" class="progress-fill" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
-                        <span style="color: var(--text-muted); font-size: 12px; font-weight: 500; display: block; margin-bottom: 12px;">BÖLGESEL OT DAĞILIMI:</span>
-                        <div id="statsWeedList" style="max-height: 100px; overflow-y: auto;">
-                            <span style="color: var(--text-muted); font-size: 13px; font-style: italic;">Veri yok.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-panel" style="padding: 20px;">
-                    <div class="stats-card-header" style="margin-bottom: 12px;">
-                        <span style="color: var(--text-main);">KOORDİNAT RAPORU</span>
-                        <button class="btn btn-outline" onclick="downloadCSV()" style="margin-top:0; padding: 6px 12px; font-size: 12px;">CSV İndir</button>
-                    </div>
-                    <div style="max-height: 150px; overflow-y: auto;">
-                        <table class="coord-table">
-                            <thead>
-                                <tr>
-                                    <th>TÜR</th>
-                                    <th>LAT</th>
-                                    <th>LNG</th>
-                                    <th>GÜVEN</th>
-                                </tr>
-                            </thead>
-                            <tbody id="coordinateTableBody">
-                                <tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">Kayıt bulunamadı.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <canvas id="hiddenCanvas" style="display:none;"></canvas>
-    </div>
 
     <div class="loading" id="loading">
         <div class="spinner"></div>
@@ -355,22 +263,18 @@
     function switchTab(tab) {
         document.getElementById('tabImg').classList.toggle('active', tab === 'image');
         document.getElementById('tabVid').classList.toggle('active', tab === 'video');
-        document.getElementById('tabCam').classList.toggle('active', tab === 'camera');
+
         
         document.getElementById('imageTab').style.display = tab === 'image' ? 'block' : 'none';
         document.getElementById('videoTab').style.display = tab === 'video' ? 'block' : 'none';
-        document.getElementById('cameraTab').style.display = tab === 'camera' ? 'block' : 'none';
+
         
         document.getElementById('results').style.display = 'none';
         document.getElementById('loading').style.display = 'none';
         
         socket.emit('stop_video_stream'); // Hangi taba geçilirse geçilsin, arkada video işleniyorsa durdur!
         
-        if (tab !== 'camera') stopCamera();
-        if (tab === 'camera') {
-            if (!map) initMap();
-            setTimeout(() => { if (map) map.invalidateSize(); }, 300);
-        }
+
     }
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -534,210 +438,7 @@
         alert('Video Akış Hatası: ' + data.error);
     });
 
-    // Camera, Map & Coordinates Logic
-    let map = null;
-    let videoStream = null;
-    let frameInterval = null;
-    let userLocation = null;
-    let heatLayer = null;
-    let heatPoints = [];
-    let sessionTotalFrames = 0;
-    let sessionWeedyFrames = 0;
-    let sessionWeeds = {};
-    let fieldCoordinates = [];
-    let fieldPolygon = null;
 
-    function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
-    function initMap() {
-        map = L.map('map').setView([39.92077, 32.85411], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OS' }).addTo(map);
-        heatPoints = [];
-        heatLayer = L.heatLayer(heatPoints, {radius: 25, blur: 15, maxZoom: 17}).addTo(map);
-
-        map.on('dblclick', function(e) {
-            userLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
-            L.popup().setLatLng(e.latlng).setContent("<b>📍 Tarla Başlangıç Köşesi Seçildi!</b><br>Şimdi 'Sınır Çiz' butonuna basabilirsiniz.").openOn(map);
-        });
-        map.doubleClickZoom.disable();
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                map.setView([userLocation.lat, userLocation.lng], 16);
-                L.marker([userLocation.lat, userLocation.lng]).addTo(map).bindPopup("<b>📍 Gerçek GPS Konumunuz</b>").openPopup();
-            }, err => {
-                map.setView([39.92077, 32.85411], 14);
-                L.popup().setLatLng([39.92077, 32.85411]).setContent("<b>ℹ️ GPS Kapalı</b><br>Haritada istediğiniz yere ÇİFT TIKLAYIN!").openOn(map);
-            }, { enableHighAccuracy: true });
-        }
-    }
-
-    async function startCamera() {
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            const video = document.getElementById('liveVideo');
-            video.srcObject = videoStream;
-            
-            document.getElementById('startCamBtn').style.display = 'none';
-            document.getElementById('stopCamBtn').style.display = 'inline-block';
-            document.getElementById('liveVideo').style.display = 'none';
-            document.getElementById('liveResultImg').style.display = 'block';
-            document.getElementById('camDetections').innerHTML = '<div class="no-detection">Kamera ısınmakta...</div>';
-
-            sessionTotalFrames = 0; sessionWeedyFrames = 0; sessionWeeds = {}; heatPoints = []; fieldCoordinates = [];
-            document.getElementById('coordinateTableBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">Henüz kayıt yok.</td></tr>';
-            if (heatLayer) heatLayer.setLatLngs([]);
-            
-            document.getElementById('analysisStatus').textContent = 'AKTİF';
-            document.getElementById('analysisStatus').style.color = 'var(--primary)';
-            document.getElementById('analysisStatus').style.background = 'rgba(16, 185, 129, 0.1)';
-            
-            document.getElementById('statsTotalFrames').textContent = '0';
-            document.getElementById('statsArea').textContent = '0 m²';
-            document.getElementById('statsRatioVal').textContent = '%0';
-            document.getElementById('statsRatioBar').style.width = '0%';
-            document.getElementById('statsWeedList').innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Kayıt yok.</span>';
-
-            const canvas = document.getElementById('hiddenCanvas');
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-            frameInterval = setInterval(() => {
-                if (video.videoWidth > 0) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    socket.emit('process_frame', canvas.toDataURL('image/jpeg', 0.5));
-                }
-            }, 800); 
-        } catch (err) { alert("Kamera açılamadı: " + err.message); }
-    }
-
-    function stopCamera() {
-        if (frameInterval) clearInterval(frameInterval);
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-            document.getElementById('liveVideo').srcObject = null;
-        }
-        document.getElementById('startCamBtn').style.display = 'inline-block';
-        document.getElementById('stopCamBtn').style.display = 'none';
-        document.getElementById('liveVideo').style.display = 'block';
-        document.getElementById('liveResultImg').style.display = 'none';
-        document.getElementById('camDetections').innerHTML = '<div class="no-detection">Kamera kapalı.</div>';
-        
-        document.getElementById('analysisStatus').textContent = 'DURDURULDU';
-        document.getElementById('analysisStatus').style.color = '#f59e0b';
-        document.getElementById('analysisStatus').style.background = 'rgba(245, 158, 11, 0.1)';
-    }
-
-    socket.on('frame_result', data => {
-        document.getElementById('liveResultImg').src = data.image;
-        const camDetections = document.getElementById('camDetections');
-        
-        sessionTotalFrames += 1;
-        document.getElementById('statsTotalFrames').textContent = sessionTotalFrames;
-        document.getElementById('statsArea').textContent = Math.round(sessionTotalFrames * 1.5) + ' m²';
-
-        if (data.detections.length === 0) {
-            camDetections.innerHTML = '<div class="no-detection">Bu karede ot yok.</div>';
-        } else {
-            sessionWeedyFrames += 1;
-            camDetections.innerHTML = data.detections.map(d => `<div class="detection-item"><span>${d.class}</span><span class="det-conf">%${d.confidence}</span></div>`).join('');
-            
-            let newUniqueDetections = [];
-            data.detections.forEach(d => {
-                let latVal = 0.0; let lngVal = 0.0;
-                if (userLocation) {
-                    latVal = userLocation.lat + (Math.random() - 0.5) * 0.00003;
-                    lngVal = userLocation.lng + (Math.random() - 0.5) * 0.00003;
-                }
-
-                let isDuplicate = fieldCoordinates.some(existing => existing.class === d.class && getDistance(latVal, lngVal, existing.lat, existing.lng) < 2.5);
-
-                if (!isDuplicate) {
-                    sessionWeeds[d.class] = (sessionWeeds[d.class] || 0) + 1;
-                    if (userLocation && map) {
-                        heatPoints.push([latVal, lngVal, 0.8]);
-                        if (heatLayer) heatLayer.setLatLngs(heatPoints);
-                    }
-
-                    const newWeed = { class: d.class, lat: latVal, lng: lngVal, confidence: d.confidence, time: new Date().toLocaleTimeString() };
-                    fieldCoordinates.push(newWeed);
-                    newUniqueDetections.push(newWeed);
-
-                    if (userLocation && map) {
-                        const redDotIcon = L.divIcon({
-                            className: 'custom-weed-marker',
-                            html: "<div style='background-color:#ef4444; width:16px; height:16px; border-radius:50%; border:2px solid #fff; animation: pulse-ring 1.5s infinite;'></div>",
-                            iconSize: [16, 16], iconAnchor: [8, 8]
-                        });
-                        L.marker([latVal, lngVal], { icon: redDotIcon }).addTo(map)
-                            .bindPopup(`<b>🌿 Yeni Ot:</b> ${d.class}<br><b>🎯 Güven:</b> %${d.confidence}<br><b>⏰ Zaman:</b> ${newWeed.time}`);
-                    }
-                }
-            });
-
-            const tableBody = document.getElementById('coordinateTableBody');
-            if (tableBody && newUniqueDetections.length > 0) {
-                if (tableBody.innerHTML.includes("Kayıt bulunamadı") || tableBody.innerHTML.includes("Kamera kapalı")) tableBody.innerHTML = '';
-                newUniqueDetections.forEach(w => {
-                    tableBody.insertAdjacentHTML('afterbegin', `<tr><td>🌿 ${w.class}</td><td style="font-family:monospace">${w.lat.toFixed(6)}</td><td style="font-family:monospace">${w.lng.toFixed(6)}</td><td style="color:var(--primary)">%${w.confidence}</td></tr>`);
-                });
-            }
-        }
-
-        const ratio = sessionTotalFrames > 0 ? Math.round((sessionWeedyFrames / sessionTotalFrames) * 100) : 0;
-        document.getElementById('statsRatioVal').textContent = '%' + ratio;
-        const ratioBar = document.getElementById('statsRatioBar');
-        if (ratioBar) {
-            ratioBar.style.width = ratio + '%';
-            ratioBar.style.background = ratio > 40 ? '#ef4444' : (ratio > 15 ? '#f59e0b' : '#10b981');
-        }
-
-        const weedEntries = Object.entries(sessionWeeds);
-        const statsList = document.getElementById('statsWeedList');
-        if (statsList) {
-            statsList.innerHTML = weedEntries.length === 0 
-                ? '<span style="color: var(--text-muted); font-size: 13px;">Kayıt yok.</span>'
-                : weedEntries.map(([name, count]) => `<div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;"><span>🌿 ${name}</span><strong style="color: var(--primary);">${count} Adet</strong></div>`).join('');
-        }
-    });
-
-    function drawFieldBoundary() {
-        if (!userLocation) userLocation = { lat: map.getCenter().lat, lng: map.getCenter().lng };
-        const w = parseFloat(document.getElementById('fieldWidth').value);
-        const l = parseFloat(document.getElementById('fieldLength').value);
-        if (isNaN(w) || isNaN(l) || w <= 0 || l <= 0) return alert("Geçerli boyutlar girin.");
-
-        if (fieldPolygon) map.removeLayer(fieldPolygon);
-        const latOffset = l / 111111;
-        const lngOffset = w / (111111 * Math.cos(userLocation.lat * Math.PI / 180));
-
-        const p1 = [userLocation.lat, userLocation.lng];
-        const p2 = [userLocation.lat + latOffset, userLocation.lng];
-        const p3 = [userLocation.lat + latOffset, userLocation.lng + lngOffset];
-        const p4 = [userLocation.lat, userLocation.lng + lngOffset];
-
-        fieldPolygon = L.polygon([p1, p2, p3, p4], { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.1, weight: 2, dashArray: '5, 8' }).addTo(map);
-        map.fitBounds(fieldPolygon.getBounds());
-    }
-
-    function downloadCSV() {
-        if (fieldCoordinates.length === 0) return alert("İndirilecek veri yok.");
-        let csv = "data:text/csv;charset=utf-8,Ot Turu,Enlem,Boylam,Dogruluk (%),Zaman\n" + fieldCoordinates.map(r => `"${r.class}",${r.lat},${r.lng},${r.confidence},"${r.time}"`).join('\n');
-        const link = document.createElement("a");
-        link.href = encodeURI(csv);
-        link.download = `tarla_raporu_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
 </script>
 </body>
 </html>

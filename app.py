@@ -203,37 +203,7 @@ def handle_disconnect():
     if sid in active_video_streams:
         active_video_streams[sid] = False
 
-@socketio.on('process_frame')
-def handle_process_frame(data):
-    try:
-        # PWA veya web üzerinden gelen veriyi al
-        if isinstance(data, dict):
-            img_data = data.get('image').split(',')[1]
-        else:
-            img_data = data.split(',')[1]
 
-        nparr = np.frombuffer(base64.b64decode(img_data), np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        results = model(frame, conf=0.35, verbose=False)
-        results = filter_huge_boxes(results)
-        annotated = results[0].plot()
-        
-        detections = []
-        for box in results[0].boxes:
-            cls_name = model.names[int(box.cls[0])]
-            conf = float(box.conf[0])
-            detections.append({'class': cls_name, 'confidence': round(conf * 100, 1)})
-
-        if len(detections) > 0:
-            _, buffer = cv2.imencode('.jpg', annotated)
-            result_img_base64 = base64.b64encode(buffer).decode('utf-8')
-            emit('frame_result', {
-                'image': 'data:image/jpeg;base64,' + result_img_base64,
-                'detections': detections
-            })
-    except Exception as e:
-        print("Frame error:", e)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
