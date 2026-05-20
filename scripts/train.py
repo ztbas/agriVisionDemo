@@ -12,7 +12,7 @@ IMG_SIZE = 640
 BATCH    = 16        # GPU yoksa 8'e dusurebilirsin
 WORKERS  = 4
 PROJECT  = "runs"
-NAME     = "agrivision_v4"
+NAME     = "agrivision_v5"
 
 
 def main():
